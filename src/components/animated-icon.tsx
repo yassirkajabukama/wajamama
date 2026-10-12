@@ -1,3 +1,4 @@
+import { brand, material, radii } from '@/theme/tokens';
 import { Image } from 'expo-image';
 import * as SplashScreen from 'expo-splash-screen';
 import { useState } from 'react';
@@ -132,15 +133,15 @@ const styles = StyleSheet.create({
     height: 71,
   },
   background: {
-    borderRadius: 40,
-    experimental_backgroundImage: `linear-gradient(180deg, #3C9FFE, #0274DF)`,
+    borderRadius: radii.pill,
+    experimental_backgroundImage: `linear-gradient(180deg, ${brand.amethyst}, ${brand.twilight})`,
     width: 128,
     height: 128,
     position: 'absolute',
   },
   splashOverlay: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: '#208AEF',
+    backgroundColor: material.light.background,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1000,

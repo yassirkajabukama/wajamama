@@ -1,98 +1,123 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useApp } from '@/providers/AppProvider';
+import { brand, material } from '@/theme/tokens';
+import { router } from 'expo-router';
+import { useEffect, useRef } from 'react';
+import { Image, StyleSheet, View } from 'react-native';
+import Animated, {
+  Easing,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+const LOGO = require('../../assets/wajamama-brand.png');
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+// Minimum time the JS splash stays visible — ensures brand impression
+// even on fast devices where storage reads complete instantly.
+const MIN_HOLD_MS = 2800;
+
+export default function SplashScreen() {
+  const { ready, entryRoute } = useApp();
+  const startTime = useRef(Date.now());
+  const navigated = useRef(false);
+
+  // ── Animation values ────────────────────────────────────────────────────
+  const logoOpacity = useSharedValue(0);
+  const logoY = useSharedValue(24);
+
+  // Full-screen exit fade
+  const screenOpacity = useSharedValue(1);
+
+  // ── Entry sequence on mount ─────────────────────────────────────────────
+  useEffect(() => {
+    const ease = Easing.out(Easing.cubic);
+
+    // Logo fades + rises in
+    logoOpacity.value = withTiming(1, { duration: 520, easing: ease });
+    logoY.value = withTiming(0, { duration: 520, easing: ease });
+  }, []);
+
+  // ── Exit: wait for ready + min hold, then fade out and navigate ─────────
+  useEffect(() => {
+    if (!ready) return;
+
+    const navigate = () => {
+      if (navigated.current) return;
+      navigated.current = true;
+      router.replace(entryRoute);
+    };
+
+    const elapsed = Date.now() - startTime.current;
+    const remaining = Math.max(0, MIN_HOLD_MS - elapsed);
+
+    const exitDelay = setTimeout(() => {
+      screenOpacity.value = withSequence(
+        withTiming(1, { duration: 0 }),            // hold
+        withDelay(80, withTiming(0, {              // fade to black
+          duration: 380,
+          easing: Easing.in(Easing.cubic),
+        })),
+      );
+      // Navigate just after the fade starts (screen is going dark anyway)
+      setTimeout(() => runOnJS(navigate)(), 320);
+    }, remaining);
+
+    return () => clearTimeout(exitDelay);
+  }, [ready, entryRoute]);
+
+  // ── Animated styles ─────────────────────────────────────────────────────
+  const logoStyle = useAnimatedStyle(() => ({
+    opacity: logoOpacity.value,
+    transform: [{ translateY: logoY.value }],
+  }));
+  const screenStyle = useAnimatedStyle(() => ({
+    opacity: screenOpacity.value,
+  }));
+
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+    <Animated.View style={[styles.screen, screenStyle]}>
+      {/* Logo */}
+      <Animated.View style={[styles.logoWrap, logoStyle]}>
+        <Image
+          source={LOGO}
+          resizeMode="contain"
+          style={styles.logo}
+          accessibilityLabel="Wajamama — Family and Women's Health"
+          accessibilityRole="image"
+        />
+      </Animated.View>
 
-export default function HomeScreen() {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
-
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+      {/* Bottom accent bar */}
+      <View style={styles.bottomBar} />
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
+    backgroundColor: material.light.background,
     alignItems: 'center',
     justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
   },
-  title: {
-    textAlign: 'center',
+  logoWrap: {
+    alignItems: 'center',
+    gap: 0,
   },
-  code: {
-    textTransform: 'uppercase',
+  logo: {
+    width: 280,
+    height: 280 * (136 / 750), // maintain source aspect ratio (750×136)
   },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
+  // Thin brand-coloured bar at the very bottom — grounds the screen
+  bottomBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 4,
+    backgroundColor: brand.orange,
   },
 });

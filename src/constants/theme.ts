@@ -7,46 +7,33 @@ import '@/global.css';
 
 import { Platform } from 'react-native';
 
+import { fontFamilies, material } from '@/theme/tokens';
+
 export const Colors = {
-  light: {
-    text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
-  },
-  dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
-  },
+ light: { text:material.light.onSurface, background:material.light.background, backgroundElement:material.light.surfaceContainer, backgroundSelected:material.light.primaryContainer, textSecondary:material.light.onSurfaceVariant, primary:material.light.primary },
+ dark: { text:material.dark.onSurface, background:material.dark.background, backgroundElement:material.dark.surfaceContainer, backgroundSelected:material.dark.primaryContainer, textSecondary:material.dark.onSurfaceVariant, primary:material.dark.primary },
 } as const;
 
 export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
 
 export const Fonts = Platform.select({
   ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
-    sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
-    serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
-    rounded: 'ui-rounded',
+    sans: fontFamilies.regular,
+    serif: fontFamilies.regular,
+    rounded: fontFamilies.regular,
     /** iOS `UIFontDescriptorSystemDesignMonospaced` */
     mono: 'ui-monospace',
   },
   default: {
-    sans: 'normal',
-    serif: 'serif',
-    rounded: 'normal',
+    sans: fontFamilies.regular,
+    serif: fontFamilies.regular,
+    rounded: fontFamilies.regular,
     mono: 'monospace',
   },
   web: {
-    sans: 'var(--font-display)',
-    serif: 'var(--font-serif)',
-    rounded: 'var(--font-rounded)',
+    sans: fontFamilies.regular,
+    serif: fontFamilies.regular,
+    rounded: fontFamilies.regular,
     mono: 'var(--font-mono)',
   },
 });
